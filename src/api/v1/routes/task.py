@@ -5,6 +5,7 @@ from fastapi import Depends
 from uuid import UUID
 from src.application.use_cases.get_task_status import GetTaskStatus
 from src.application.use_cases.cancel_task import CancelTask
+from src.application.use_cases.list_tasks import ListTasks
 router=APIRouter(prefix="/tasks",tags=["tasks"])
 
 
@@ -12,6 +13,11 @@ router=APIRouter(prefix="/tasks",tags=["tasks"])
 async def create_task(request: CreateTaskRequest, use_case=Depends(get_create_task)):
     task = await use_case.execute(request.title, request.user_id, request.payload)
     return task
+
+@router.get("/")
+async def list_tasks(repository=Depends(get_repository)):
+    use_case = ListTasks(repository)
+    return await use_case.execute()
 
 @router.get("/{task_id}")
 async def get_task_status(task_id:UUID,repository=Depends(get_repository)):

@@ -38,5 +38,9 @@ class PostgreSQLTaskRepository(TaskRepository):
         db_task=await self.get_by_id(task_id)
         await self.session.delete(db_task)
         await self.session.commit()
+
+    async def get_all(self):
+       result = await self.session.execute(select(TaskModel))
+       return result.scalars().all()
     
    

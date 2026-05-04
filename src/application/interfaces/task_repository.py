@@ -38,4 +38,10 @@ class TaskRepository(ABC):
         :param task_id: Silinecek görevin benzersiz UUID'si.
         """
         pass
+    @abstractmethod
+    def get_all(self):
+      """Tüm görevleri listeler."""
+    pass
+
+    
     
