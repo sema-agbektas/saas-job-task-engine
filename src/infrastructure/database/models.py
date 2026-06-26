@@ -14,6 +14,13 @@ class TaskModel(Base):
     retry_count= Column(Integer,default=0)
     created_at= Column(DateTime(timezone=True))
     payload=Column(JSON)
+
+
+class UserModel(Base):
+    __tablename__ = "users"
+    id = Column(PGUUID, primary_key=True, default=uuid4)
+    email = Column(String, nullable=False, unique=True)
+    hashed_password = Column(String, nullable=False)
     
     
     
