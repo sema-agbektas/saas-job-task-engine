@@ -43,5 +43,18 @@ class TaskRepository(ABC):
       """Tüm görevleri listeler."""
     pass
 
+    @abstractmethod
+    def get_by_user_id(self,user_id:UUID, limit: int = 20, offset: int = 0):
+        """
+        Belirli bir kullanıcıya ait tüm görevleri listeler.
+        :param user_id: Görevleri listelenecek kullanıcının UUID'si.
+        """
+        pass
+
+@abstractmethod
+async def get_by_idempotency_key(self,idempotency_key: str) -> Task|None:
+
+    pass
+
     
     

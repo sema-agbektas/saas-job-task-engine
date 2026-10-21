@@ -10,10 +10,11 @@ class TaskModel(Base):
     id= Column( PGUUID,primary_key=True,default=uuid4)
     title= Column(String,nullable=False)
     status= Column(String,nullable=False)
-    user_id= Column(PGUUID)
+    user_id= Column(PGUUID,index=True)
     retry_count= Column(Integer,default=0)
     created_at= Column(DateTime(timezone=True))
     payload=Column(JSON)
+    idempotency_key=Column(String,nullable=True,unique=True)
 
 
 class UserModel(Base):

@@ -20,13 +20,15 @@ async def get_create_task(repository=Depends(get_repository)):
         redis_url=settings.REDIS_URL
     )
 
+async def get_user_repository(session=Depends(get_session)):
+    return PostgreSQLUserRepository(session)
 
-async def get_current_user(token: str = Depends(oauth2_scheme), session=Depends(get_session)):
+async def get_current_user(token: str = Depends(oauth2_scheme), repo=Depends(get_user_repository)):
     email = decode_token(token)
     if not email:
         raise HTTPException(status_code=401, detail="Invalid token")
-    repo = PostgreSQLUserRepository(session)
     user = await repo.get_by_email(email)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+

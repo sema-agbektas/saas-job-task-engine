@@ -3,6 +3,7 @@ from datetime import datetime,UTC
 from typing import Any,Dict
 from uuid import UUID,uuid4
 from src.domain.enums.task_status import TaskStatus
+from typing import Optional
 @dataclass
 class Task:
     """task entiysi projedeki iş birimlerini temsil eder"""
@@ -18,4 +19,4 @@ class Task:
     retry_count:int=0
     #görevin sisteme kayıt edildiği tarih ve saati otomatik kaydeder
     created_at: datetime = field(default_factory=lambda:datetime.now(UTC))
-    
+    idempotency_key: Optional[str] = None
