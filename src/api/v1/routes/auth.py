@@ -1,16 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.database.session import get_session
-from src.infrastructure.repositories.pg_user_repository import PostgreSQLUserRepository
 from src.api.v1.schemas.auth_schema import RegisterRequest
 from src.core.security import get_password_hash, verify_password, create_access_token
-
+from src.core.dependencies import get_user_repository
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", status_code=201)
-async def register(request: RegisterRequest, session: AsyncSession = Depends(get_session)):
-    repo = PostgreSQLUserRepository(session)
+async def register(request: RegisterRequest, repo=Depends(get_user_repository)):
     existing = await repo.get_by_email(request.email)
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -20,8 +16,7 @@ async def register(request: RegisterRequest, session: AsyncSession = Depends(get
 
 
 @router.post("/login")
-async def login(request: RegisterRequest, session: AsyncSession = Depends(get_session)):
-    repo = PostgreSQLUserRepository(session)
+async def login(request: RegisterRequest, repo=Depends(get_user_repository)):
     user = await repo.get_by_email(request.email)
     if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
