@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy import select, update
 
 class PostgreSQLTaskRepository(TaskRepository):
     def __init__(self, session: AsyncSession):
@@ -58,3 +58,12 @@ class PostgreSQLTaskRepository(TaskRepository):
     async def get_by_idempotency_key(self, idempotency_key: str):
         result = await self.session.execute(select(TaskModel).where(TaskModel.idempotency_key == idempotency_key))
         return result.scalar_one_or_none()
+
+    async def claim_task(self, task_id: UUID) -> bool:
+        result = await self.session.execute(
+            update(TaskModel)
+            .where(TaskModel.id == task_id, TaskModel.status.in_(["pending", "retrying"]))
+            .values(status="running")
+        )
+        await self.session.commit()
+        return result.rowcount > 0

@@ -32,3 +32,20 @@ async def test_update_and_delete(db_session):
     await repo.delete(task.id)
     deleted = await repo.get_by_id(task.id)
     assert deleted is None
+
+@pytest.mark.asyncio
+async def test_claim_task_only_succeeds_once(db_session):
+    repo = PostgreSQLTaskRepository(db_session)
+    task = Task(title="Claim Test", user_id=uuid4(), payload={})
+
+    await repo.save(task)
+
+    first = await repo.claim_task(task.id)      # task'ın id'si
+    second = await repo.claim_task(task.id)     # aynı id, ikinci kez
+
+    db_session.expire_all()
+    fetched = await repo.get_by_id(task.id)
+
+    assert first is True         # True olmalı
+    assert second is False         # False olmalı
+    assert fetched.status == "running"

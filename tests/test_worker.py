@@ -86,3 +86,36 @@ async def test_retrying_task_is_added_to_retry_queue():
 
     mock_redis.zadd.assert_called_once()
     assert mock_redis.zadd.call_args[0][0] == "retry_queue"
+
+@pytest.mark.asyncio
+async def test_process_task_skips_task_already_running():
+    from src.domain.entities.task import Task
+    from src.domain.enums.task_status import TaskStatus
+
+    task = Task(title="Test", user_id=uuid4(), payload={}, status=TaskStatus.RUNNING)   
+    mock_repo = AsyncMock()
+    mock_redis = AsyncMock()
+    mock_repo.get_by_id.return_value = task
+
+    with patch("src.worker.PostgreSQLTaskRepository", return_value=mock_repo), \
+         patch("src.worker.AsyncSessionLocal"):
+        await process_task(str(task.id), mock_redis)
+
+    mock_repo.update.assert_not_called()
+@pytest.mark.asyncio
+async def test_process_task_skips_when_claim_fails():
+    from src.domain.entities.task import Task
+    from src.domain.enums.task_status import TaskStatus
+
+    task = Task(title="Test", user_id=uuid4(), payload={})
+    mock_repo = AsyncMock()
+    mock_redis = AsyncMock()
+    mock_repo.get_by_id.return_value = task
+    mock_repo.claim_task.return_value = False    # başka worker kaptı: True mu False mu?
+
+    with patch("src.worker.PostgreSQLTaskRepository", return_value=mock_repo), \
+         patch("src.worker.AsyncSessionLocal"):
+        await process_task(str(task.id), mock_redis)
+
+    mock_repo.update.assert_not_called()
+    assert task.status == TaskStatus.PENDING

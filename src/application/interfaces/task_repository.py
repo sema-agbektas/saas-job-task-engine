@@ -51,10 +51,13 @@ class TaskRepository(ABC):
         """
         pass
 
-@abstractmethod
-async def get_by_idempotency_key(self,idempotency_key: str) -> Task|None:
+    @abstractmethod
+    async def get_by_idempotency_key(self,idempotency_key: str) -> Task|None:
+     pass
 
-    pass
+    @abstractmethod
+    async def claim_task(self,task_id:UUID) -> bool:
+       pass
 
     
     

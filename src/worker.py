@@ -36,9 +36,18 @@ async def process_task(task_id: str,redis):
         if not task:
             logger.warning(f"Task bulunamadı: {task_id}")
             return
+        if task.status not in (TaskStatus.PENDING,TaskStatus.RETRYING):
+            logger.warning(f"Task zaten işleniyor veya bitmiş: {task_id}")
+            return
+        claimed = await repository.claim_task(task.id)
+        if not claimed:
+            logger.warning(f"Task başka worker tarafından alındı: {task_id}")
+            return
 
         task.status = TaskStatus.RUNNING
-        await repository.update(task)
+        logger.info(f"İşleniyor: {task.title}")
+
+        task.status = TaskStatus.RUNNING
         logger.info(f"İşleniyor: {task.title}")
 
         try:
