@@ -77,3 +77,13 @@ class PostgreSQLTaskRepository(TaskRepository):
         result=await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount>0
+
+    async def mark_retrying(self, task_id: UUID, retry_count: int) -> bool:
+      stmt = (
+        update(TaskModel)
+        .where(TaskModel.id == task_id, TaskModel.status == "running")
+        .values(status="retrying", retry_count=retry_count)
+      )
+      result = await self.session.execute(stmt)
+      await self.session.commit()
+      return result.rowcount > 0

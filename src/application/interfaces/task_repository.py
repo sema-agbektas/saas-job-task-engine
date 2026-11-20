@@ -62,6 +62,9 @@ class TaskRepository(ABC):
     @abstractmethod
     async def finish_task(self,task_id:UUID, new_status:str) -> bool:
        pass
+    @abstractmethod
+    async def mark_retrying(self, task_id: UUID, retry_count: int) -> bool:
+       pass
 
     
     

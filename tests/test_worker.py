@@ -46,7 +46,7 @@ async def test_process_task_retries_on_failure():
          patch("src.worker.asyncio.sleep", side_effect=Exception("Simulated failure")):
         await process_task(str(task.id), mock_redis)
 
-    assert task.status.value == "retrying"
+    mock_repo.mark_retrying.assert_called_once_with(task.id, 1)
     assert task.retry_count == 1
     mock_redis.zadd.assert_called_once()
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ async def test_task_moves_to_dead_letter_queue_after_max_retries():
          patch("src.worker.asyncio.sleep", side_effect=Exception("Simulated failure")):
         await process_task(str(task.id), mock_redis)
 
-    assert task.status.value == "failed"
+    mock_repo.finish_task.assert_called_once_with(task.id, "failed")
     mock_redis.rpush.assert_called_once_with("dead_letter_queue", str(task.id))
     mock_redis.zadd.assert_not_called()
 @pytest.mark.asyncio

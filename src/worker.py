@@ -64,15 +64,19 @@ async def process_task(task_id: str,redis):
 
             if task.retry_count < MAX_RETRIES:
                 task.retry_count += 1
-                task.status = TaskStatus.RETRYING
-                await repository.update(task)
-                delay = 2 ** task.retry_count
+                updated=await repository.mark_retrying(task.id,task.retry_count)
+                if not updated:
+                    logger.warning(f"Task{task.id}retry sırasında iptal edilmiş, kuyruğa eklenmedi")
+                    return
+                delay=2**task.retry_count
                 score = time.time() + delay
                 await redis.zadd("retry_queue", {task_id: score}) 
                 logger.info(f"Tekrar deniyor ({task.retry_count}/{MAX_RETRIES})")
             else:
-                task.status = TaskStatus.FAILED
-                await repository.update(task)
+                updated=await repository.finish_task(task.id,TaskStatus.FAILED.value)
+                if not updated:
+                    logger.warning(f"Task{task.id} failed yazılırken iptal edilmiş")
+                    return
                 await redis.rpush(DEAD_LETTER_QUEUE,task_id)
                 logger.error(f"Başarısız: {task_id}")
 
