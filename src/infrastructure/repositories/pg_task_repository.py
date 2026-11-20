@@ -67,3 +67,13 @@ class PostgreSQLTaskRepository(TaskRepository):
         )
         await self.session.commit()
         return result.rowcount > 0
+
+    async def finish_task(self, task_id:UUID, new_status:str)->bool:
+        stmt=(
+            update(TaskModel)
+            .where(TaskModel.id==task_id,TaskModel.status=="running")
+            .values(status=new_status)
+        )
+        result=await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount>0

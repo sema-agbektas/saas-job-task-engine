@@ -59,5 +59,9 @@ class TaskRepository(ABC):
     async def claim_task(self,task_id:UUID) -> bool:
        pass
 
+    @abstractmethod
+    async def finish_task(self,task_id:UUID, new_status:str) -> bool:
+       pass
+
     
     

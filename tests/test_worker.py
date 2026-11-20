@@ -29,7 +29,7 @@ async def test_process_task_success():
          patch("src.worker.AsyncSessionLocal"):
         await process_task(str(task.id), mock_redis)
 
-    assert task.status.value == "success"
+    mock_repo.finish_task.assert_called_once_with(task.id, "success")
 
 
 @pytest.mark.asyncio
@@ -119,3 +119,22 @@ async def test_process_task_skips_when_claim_fails():
 
     mock_repo.update.assert_not_called()
     assert task.status == TaskStatus.PENDING
+
+@pytest.mark.asyncio
+async def test_process_task_does_not_overwrite_cancelled_task():
+    from src.domain.entities.task import Task
+    from src.domain.enums.task_status import TaskStatus
+
+    task = Task(title="Test", user_id=uuid4(), payload={})
+    mock_repo = AsyncMock()
+    mock_redis = AsyncMock()
+    mock_repo.get_by_id.return_value = task
+    mock_repo.claim_task.return_value = True   # başka worker kaptı: True mu False mu?
+    mock_repo.finish_task.return_value=False
+
+    with patch("src.worker.PostgreSQLTaskRepository", return_value=mock_repo), \
+         patch("src.worker.AsyncSessionLocal"):
+        await process_task(str(task.id), mock_redis)
+
+    mock_repo.finish_task.assert_called_once()
+    mock_repo.update.assert_not_called()
