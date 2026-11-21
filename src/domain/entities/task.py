@@ -20,3 +20,4 @@ class Task:
     #görevin sisteme kayıt edildiği tarih ve saati otomatik kaydeder
     created_at: datetime = field(default_factory=lambda:datetime.now(UTC))
     idempotency_key: Optional[str] = None
+    started_at:Optional[datetime]=None

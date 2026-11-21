@@ -15,6 +15,7 @@ class TaskModel(Base):
     created_at= Column(DateTime(timezone=True))
     payload=Column(JSON)
     idempotency_key=Column(String,nullable=True,unique=True)
+    started_at= Column(DateTime(timezone=True),nullable=True)
 
 
 class UserModel(Base):

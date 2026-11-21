@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
-
+from datetime import datetime,timezone
 class PostgreSQLTaskRepository(TaskRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -63,7 +63,7 @@ class PostgreSQLTaskRepository(TaskRepository):
         result = await self.session.execute(
             update(TaskModel)
             .where(TaskModel.id == task_id, TaskModel.status.in_(["pending", "retrying"]))
-            .values(status="running")
+            .values(status="running",started_at=datetime.now(timezone.utc))
         )
         await self.session.commit()
         return result.rowcount > 0
