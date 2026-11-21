@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 QUEUE_NAME = "task_queue"
 MAX_RETRIES = 3
 DEAD_LETTER_QUEUE="dead_letter_queue"
-
+STUCK_TIMEOUT_SECONDS = 300
+RECOVERY_INTERVAL_SECONDS = 60
 # Database URL'i config'den oluştur
 DATABASE_URL = (
     f"postgresql+asyncpg://{settings.POSTGRES_USER}:"
@@ -98,25 +99,26 @@ async def recover_stuck_tasks(redis):
 async def run_worker():
     redis = await aioredis.from_url(settings.REDIS_URL)
     logger.info("Worker başladı, kuyruk dinleniyor...")
+    last_recovery = 0
 
     while True:
         try:
+            if time.time() - last_recovery > RECOVERY_INTERVAL_SECONDS:
+                await recover_stuck_tasks(redis)
+                last_recovery = time.time()
+
             now = time.time()
-            due=await redis.zrangebyscore("retry_queue",0,now,)
+            due = await redis.zrangebyscore("retry_queue", 0, now)
             for item in due:
-                removed=await redis.zrem("retry_queue",item)
+                removed = await redis.zrem("retry_queue", item)
                 if removed:
-                    await redis.rpush(QUEUE_NAME,item)
-            
+                    await redis.rpush(QUEUE_NAME, item)
+
             result = await redis.blpop(QUEUE_NAME, timeout=5)
             if result:
                 _, task_id = result
-                await process_task(task_id.decode("utf-8"),redis)
+                await process_task(task_id.decode("utf-8"), redis)
 
         except Exception as e:
             logger.error(f"Worker hatası: {e}")
             await asyncio.sleep(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(run_worker())
