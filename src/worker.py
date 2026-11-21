@@ -85,7 +85,7 @@ async def recover_stuck_tasks(redis):
     async with AsyncSessionLocal() as session:
         repository = PostgreSQLTaskRepository(session)
 
-        recovered=await repository.recover_stuck_task(STUCK_TIMEOUT_SECONDS, MAX_RETRIES)
+        recovered=await repository.recover_stuck_tasks(STUCK_TIMEOUT_SECONDS, MAX_RETRIES)
         for task_id in recovered:
             await redis.rpush(QUEUE_NAME,str(task_id))
             logger.warning(f"Takılı task kurtarıldı:{task_id}")
@@ -104,9 +104,11 @@ async def run_worker():
     while True:
         try:
             if time.time() - last_recovery > RECOVERY_INTERVAL_SECONDS:
-                await recover_stuck_tasks(redis)
+                try:
+                    await recover_stuck_tasks(redis)
+                except Exception as e:
+                    logger.error(f"Kurtarma hatası: {e}")
                 last_recovery = time.time()
-
             now = time.time()
             due = await redis.zrangebyscore("retry_queue", 0, now)
             for item in due:
@@ -122,3 +124,5 @@ async def run_worker():
         except Exception as e:
             logger.error(f"Worker hatası: {e}")
             await asyncio.sleep(1)
+if __name__ == "__main__":
+    asyncio.run(run_worker())
