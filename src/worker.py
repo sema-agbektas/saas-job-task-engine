@@ -80,6 +80,20 @@ async def process_task(task_id: str,redis):
                 await redis.rpush(DEAD_LETTER_QUEUE,task_id)
                 logger.error(f"Başarısız: {task_id}")
 
+async def recover_stuck_tasks(redis):
+    async with AsyncSessionLocal() as session:
+        repository = PostgreSQLTaskRepository(session)
+
+        recovered=await repository.recover_stuck_task(STUCK_TIMEOUT_SECONDS, MAX_RETRIES)
+        for task_id in recovered:
+            await redis.rpush(QUEUE_NAME,str(task_id))
+            logger.warning(f"Takılı task kurtarıldı:{task_id}")
+
+        failed=await repository.fail_stuck_tasks(STUCK_TIMEOUT_SECONDS,MAX_RETRIES)
+        for task_id in failed:
+            await redis.rpush(DEAD_LETTER_QUEUE,str(task_id))
+            logger.error(f"Takılı task başarısız sayıldı:{task_id}")
+
 
 async def run_worker():
     redis = await aioredis.from_url(settings.REDIS_URL)

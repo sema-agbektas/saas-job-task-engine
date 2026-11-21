@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-
+from datetime import datetime, timedelta, timezone
 from src.domain.entities.task import Task
 from src.infrastructure.repositories.pg_task_repository import PostgreSQLTaskRepository
 from src.domain.enums.task_status import TaskStatus
@@ -49,3 +49,23 @@ async def test_claim_task_only_succeeds_once(db_session):
     assert first is True         # True olmalı
     assert second is False         # False olmalı
     assert fetched.status == "running"
+
+@pytest.mark.asyncio
+async def test_recover_stuck_tasks_requeues_old_running_task(db_session):
+    repo = PostgreSQLTaskRepository(db_session)
+    task = Task(
+        title="stuck",
+        user_id=uuid4(),
+        payload={},
+        status=TaskStatus.RUNNING,
+        started_at=datetime.now(timezone.utc) - timedelta(minutes=10),
+    )
+    await repo.save(task)
+
+    recovered = await repo.recover_stuck_tasks(300, 3)
+
+    assert task.id in recovered
+    db_session.expire_all()
+    saved = await repo.get_by_id(task.id)
+    assert saved.status == "retrying"
+    assert saved.retry_count == 1

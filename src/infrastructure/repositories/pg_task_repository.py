@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 class PostgreSQLTaskRepository(TaskRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -20,7 +20,8 @@ class PostgreSQLTaskRepository(TaskRepository):
             retry_count=task.retry_count,
             created_at=task.created_at,
             payload=task.payload,
-            idempotency_key=task.idempotency_key
+            idempotency_key=task.idempotency_key,
+            started_at=task.started_at,
         )
         self.session.add(db_task)
         try:
@@ -87,3 +88,37 @@ class PostgreSQLTaskRepository(TaskRepository):
       result = await self.session.execute(stmt)
       await self.session.commit()
       return result.rowcount > 0
+
+    async def recover_stuck_tasks(self, timeout_seconds: int, max_retries: int) -> list[UUID]:
+        threshold = datetime.now(timezone.utc) - timedelta(seconds=timeout_seconds)
+        stmt = (
+            update(TaskModel)
+            .where(
+                TaskModel.status == "running",
+                TaskModel.started_at <threshold,
+                TaskModel.retry_count < max_retries,
+            )
+            .values(status="retrying", retry_count=TaskModel.retry_count + 1)
+            .returning(TaskModel.id)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return [row[0] for row in result.all()]
+    
+    async def fail_stuck_tasks(self, timeout_seconds: int, max_retries: int) -> list[UUID]:
+        threshold = datetime.now(timezone.utc) - timedelta(seconds=timeout_seconds)
+        stmt = (
+            update(TaskModel)
+            .where(
+                TaskModel.status == "running",
+                TaskModel.started_at < threshold,
+                TaskModel.retry_count >= max_retries,
+            )
+            .values(status="failed")
+            .returning(TaskModel.id)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return [row[0] for row in result.all()]
+
+    

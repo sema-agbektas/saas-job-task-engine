@@ -41,7 +41,7 @@ class TaskRepository(ABC):
     @abstractmethod
     def get_all(self):
       """Tüm görevleri listeler."""
-    pass
+      pass
 
     @abstractmethod
     def get_by_user_id(self,user_id:UUID, limit: int = 20, offset: int = 0):
@@ -64,6 +64,12 @@ class TaskRepository(ABC):
        pass
     @abstractmethod
     async def mark_retrying(self, task_id: UUID, retry_count: int) -> bool:
+       pass
+    @abstractmethod
+    async def recover_stuck_tasks(self,timeout_seconds:int,max_retries:int) -> list[UUID]:
+       pass
+    @abstractmethod
+    async def fail_stuck_tasks(self, timeout_seconds: int, max_retries: int) -> list[UUID]:
        pass
 
     
