@@ -69,3 +69,24 @@ async def test_recover_stuck_tasks_requeues_old_running_task(db_session):
     saved = await repo.get_by_id(task.id)
     assert saved.status == "retrying"
     assert saved.retry_count == 1
+
+@pytest.mark.asyncio
+async def test_fail_stuck_tasks_marks_exhausted_task_failed(db_session):
+    repo = PostgreSQLTaskRepository(db_session)
+    task = Task(
+        title="stuck",
+        user_id=uuid4(),
+        payload={},
+        status=TaskStatus.RUNNING,
+        retry_count=3,
+        started_at=datetime.now(timezone.utc) - timedelta(minutes=10),
+    )
+    await repo.save(task)
+
+    failed = await repo.fail_stuck_tasks(300, 3)
+
+    assert task.id in failed
+    db_session.expire_all()
+    saved = await repo.get_by_id(task.id)
+    assert saved.status == "failed"
+    assert saved.retry_count == 3
