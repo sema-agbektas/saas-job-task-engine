@@ -2,7 +2,9 @@ import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta, UTC
 from jose.exceptions import ExpiredSignatureError
-SECRET_KEY = "changeme-use-env-in-production"
+from src.core.config import settings
+
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 
 
@@ -22,7 +24,7 @@ def create_access_token(data: dict) -> str:
 
 def decode_token(token: str) -> str:
     try:
-        payload = jwt.decode(token, SECRET_KEY,algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub")
     except ExpiredSignatureError:
         return None

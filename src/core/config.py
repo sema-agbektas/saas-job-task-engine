@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int
     POSTGRES_USER: str
     APP_PORT: int
+    SECRET_KEY: str
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(env_file=".env")
