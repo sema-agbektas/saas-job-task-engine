@@ -1,5 +1,8 @@
 import asyncio
 import logging
+import os 
+import socket
+from src.infrastructure.logging_config import setup_logging, task_id_var, worker_id_var
 from uuid import UUID
 
 import redis.asyncio as aioredis
@@ -10,7 +13,6 @@ from src.core.config import settings
 from src.domain.enums.task_status import TaskStatus
 from src.infrastructure.repositories.pg_task_repository import PostgreSQLTaskRepository
 import time
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 QUEUE_NAME = "task_queue"
@@ -30,6 +32,7 @@ AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 
 async def process_task(task_id: str,redis):
+    task_id_var.set(task_id)
     async with AsyncSessionLocal() as session:
         repository = PostgreSQLTaskRepository(session)
 
@@ -97,6 +100,8 @@ async def recover_stuck_tasks(redis):
 
 
 async def run_worker():
+    setup_logging()
+    worker_id_var.set = f"{socket.gethostname()}-{os.getpid()}"
     redis = await aioredis.from_url(settings.REDIS_URL)
     logger.info("Worker başladı, kuyruk dinleniyor...")
     last_recovery = 0
