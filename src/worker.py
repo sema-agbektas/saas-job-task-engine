@@ -101,7 +101,7 @@ async def recover_stuck_tasks(redis):
 
 async def run_worker():
     setup_logging()
-    worker_id_var.set = f"{socket.gethostname()}-{os.getpid()}"
+    worker_id_var.set(f"{socket.gethostname()}-{os.getpid()}")
     redis = await aioredis.from_url(settings.REDIS_URL)
     logger.info("Worker başladı, kuyruk dinleniyor...")
     last_recovery = 0
