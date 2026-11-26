@@ -6,7 +6,10 @@ from src.api.v1.routes.task import router
 from src.api.v1.routes.auth import router as auth_router
 from fastapi.responses import JSONResponse
 from src.domain.exceptions.domain_exceptions import TaskNotFoundError
-
+import logging
+import time
+import uuid
+from src.infrastructure.logging_config import setup_logging, request_id_var
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.redis = await aioredis.from_url(settings.REDIS_URL)
@@ -17,10 +20,30 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="SaaS Job & Task Engine", version="1.0.0", lifespan=lifespan)
 app.include_router(router)
 app.include_router(auth_router)
-
 @app.exception_handler(TaskNotFoundError)
 async def task_not_found_handler(request:Request,exc:TaskNotFoundError):
     return JSONResponse(status_code=404,content={"detail":str(exc)})
 @app.exception_handler(PermissionError)
 async def permission_error_handler(request:Request,exc:PermissionError):
     return JSONResponse(status_code=403,content={"detail":str(exc)})
+setup_logging()
+logger = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def request_id_middleware(request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    request_id_var.set(request_id)
+    start = time.monotonic()
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "İstek tamamlandı",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": int((time.monotonic() - start) * 1000),
+        },
+    )
+    return response

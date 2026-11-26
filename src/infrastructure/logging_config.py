@@ -8,7 +8,7 @@ import socket
 
 task_id_var: ContextVar[str | None] = ContextVar("task_id", default=None)
 worker_id_var: ContextVar[str | None] = ContextVar("worker_id", default=None)
-
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -19,8 +19,9 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
             "task_id": task_id_var.get(),
             "worker_id": worker_id_var.get(),
+            "request_id": request_id_var.get(),
         }
-        for key in ("duration_ms","retry_count"):
+        for key in ("duration_ms","retry_count","method","path","status_code"):
             if hasattr(record, key):
                 log[key] = getattr(record, key)
         if record.exc_info:
