@@ -20,6 +20,9 @@ class JsonFormatter(logging.Formatter):
             "task_id": task_id_var.get(),
             "worker_id": worker_id_var.get(),
         }
+        for key in ("duration_ms","retry_count"):
+            if hasattr(record, key):
+                log[key] = getattr(record, key)
         if record.exc_info:
             log["exception"] = self.formatException(record.exc_info)
         return json.dumps(log, ensure_ascii=False)

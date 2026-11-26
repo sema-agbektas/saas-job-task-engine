@@ -54,13 +54,21 @@ async def process_task(task_id: str,redis):
 
         try:
             # Asıl iş buraya gelecek
+            start_time = time.time()
             await asyncio.sleep(2)
 
             finished=await repository.finish_task(task.id,TaskStatus.SUCCESS.value)
             if not finished:
-                logger.warning(f"Task{task_id} işlenirken,iptal edilidi,sonuç yazılamadı")
+                logger.warning(f"Task{task.id}success yazılırken iptal edilmiş")
                 return
-            logger.info("Task tamamlandı")
+            logger.info(
+                "task tamamlandı",
+                extra={
+                    "duration_ms": int((time.time() - start_time) * 1000),
+                    "retry_count": task.retry_count,
+                },
+
+            )
         except Exception as e:
             logger.error(f"Hata: {e}")
 
