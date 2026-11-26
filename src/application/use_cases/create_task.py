@@ -9,8 +9,8 @@ class CreateTask:
         self.task_repository = task_repository
         self.redis_url=redis_url
 
-    async def execute(self, title,user_id,payload,idempotency_key: str) :
-        task= Task(title=title,user_id=user_id,payload=payload,idempotency_key=idempotency_key)
+    async def execute(self, title,user_id,payload,idempotency_key: str,request_id: str):
+        task= Task(title=title,user_id=user_id,payload=payload,idempotency_key=idempotency_key,request_id=request_id)
         try:
             await self.task_repository.save(task)
         except IntegrityError:

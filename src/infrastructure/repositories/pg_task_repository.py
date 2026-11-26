@@ -22,6 +22,7 @@ class PostgreSQLTaskRepository(TaskRepository):
             payload=task.payload,
             idempotency_key=task.idempotency_key,
             started_at=task.started_at,
+            request_id=task.request_id,
         )
         self.session.add(db_task)
         try:

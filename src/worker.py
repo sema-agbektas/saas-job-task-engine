@@ -13,6 +13,7 @@ from src.core.config import settings
 from src.domain.enums.task_status import TaskStatus
 from src.infrastructure.repositories.pg_task_repository import PostgreSQLTaskRepository
 import time
+from src.infrastructure.logging_config import setup_logging, task_id_var, worker_id_var, request_id_var
 logger = logging.getLogger(__name__)
 
 QUEUE_NAME = "task_queue"
@@ -40,6 +41,7 @@ async def process_task(task_id: str,redis):
         if not task:
             logger.warning(f"Task bulunamadı: {task_id}")
             return
+        request_id_var.set(task.request_id)
         if task.status not in (TaskStatus.PENDING,TaskStatus.RETRYING):
             logger.warning(f"Task zaten işleniyor veya bitmiş: {task_id}")
             return

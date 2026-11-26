@@ -16,7 +16,7 @@ class TaskModel(Base):
     payload=Column(JSON)
     idempotency_key=Column(String,nullable=True,unique=True)
     started_at= Column(DateTime(timezone=True),nullable=True)
-
+    request_id=Column(String,nullable=True)
 
 class UserModel(Base):
     __tablename__ = "users"

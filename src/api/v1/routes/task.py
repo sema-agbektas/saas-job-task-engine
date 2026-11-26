@@ -5,15 +5,14 @@ from src.core.dependencies import get_repository, get_create_task, get_current_u
 from src.application.use_cases.get_task_status import GetTaskStatus
 from src.application.use_cases.cancel_task import CancelTask
 from src.application.use_cases.list_tasks import ListTasks
-
+from src.infrastructure.logging_config import request_id_var
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @router.post("/")
-async def create_task(request: CreateTaskRequest, use_case=Depends(get_create_task), current_user=Depends(get_current_user),   idempotency_key: str = Header(...)):
-    task = await use_case.execute(request.title, current_user.id, request.payload,idempotency_key)
+async def create_task(request: CreateTaskRequest, use_case=Depends(get_create_task), current_user=Depends(get_current_user), idempotency_key: str = Header(...)):
+    task = await use_case.execute(request.title, current_user.id, request.payload, idempotency_key, request_id_var.get())
     return task
-
 @router.get("/")
 async def list_tasks(limit:int=20,offset:int=0,repository=Depends(get_repository),current_user=Depends(get_current_user)):
     use_case = ListTasks(repository)

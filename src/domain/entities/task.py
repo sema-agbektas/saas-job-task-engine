@@ -21,3 +21,4 @@ class Task:
     created_at: datetime = field(default_factory=lambda:datetime.now(UTC))
     idempotency_key: Optional[str] = None
     started_at:Optional[datetime]=None
+    request_id: Optional[str] = None
