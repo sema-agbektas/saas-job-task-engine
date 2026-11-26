@@ -56,6 +56,8 @@ async def process_task(task_id: str,redis):
             # Asıl iş buraya gelecek
             start_time = time.time()
             await asyncio.sleep(2)
+            if task.payload and task.payload.get("fail"):
+                raise Exception("Simüle edilmiş hata")
 
             finished=await repository.finish_task(task.id,TaskStatus.SUCCESS.value)
             if not finished:
@@ -70,8 +72,7 @@ async def process_task(task_id: str,redis):
 
             )
         except Exception as e:
-            logger.error(f"Hata: {e}")
-
+            logger.exception("Task işlenirken hata")
             if task.retry_count < MAX_RETRIES:
                 task.retry_count += 1
                 updated=await repository.mark_retrying(task.id,task.retry_count)
