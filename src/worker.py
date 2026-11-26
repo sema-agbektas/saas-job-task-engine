@@ -51,8 +51,6 @@ async def process_task(task_id: str,redis):
         task.status = TaskStatus.RUNNING
         logger.info(f"İşleniyor: {task.title}")
 
-        task.status = TaskStatus.RUNNING
-        logger.info(f"İşleniyor: {task.title}")
 
         try:
             # Asıl iş buraya gelecek
@@ -62,7 +60,7 @@ async def process_task(task_id: str,redis):
             if not finished:
                 logger.warning(f"Task{task_id} işlenirken,iptal edilidi,sonuç yazılamadı")
                 return
-            logger.info(f"Task{task_id}tamamlandı")
+            logger.info("Task tamamlandı")
         except Exception as e:
             logger.error(f"Hata: {e}")
 
